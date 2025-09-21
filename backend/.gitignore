@@ -64,7 +64,6 @@ Thumbs.db
 # Build outputs
 dist/
 build/
-frontend/build/
 
 # Temporary files
 tmp/

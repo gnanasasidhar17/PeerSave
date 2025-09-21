@@ -1,0 +1,256 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-dark-950 text-dark-50 font-sans;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Custom scrollbar for dark theme */
+  ::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-dark-900;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-dark-600 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-dark-500;
+  }
+
+  /* Selection styling */
+  ::selection {
+    @apply bg-primary-500/20 text-primary-200;
+  }
+
+  /* Focus styles */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary-500/50 ring-offset-2 ring-offset-dark-950;
+  }
+}
+
+@layer components {
+  /* Glass morphism effect */
+  .glass {
+    @apply bg-white/5 backdrop-blur-md border border-white/10;
+  }
+
+  .glass-dark {
+    @apply bg-dark-900/50 backdrop-blur-md border border-dark-700/50;
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary-400 via-accent-400 to-primary-400 bg-clip-text text-transparent;
+  }
+
+  .gradient-text-animated {
+    @apply bg-gradient-to-r from-primary-400 via-accent-400 to-primary-400 bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient-x;
+  }
+
+  /* Button styles */
+  .btn-primary {
+    @apply bg-gradient-primary hover:shadow-glow text-white font-medium px-6 py-3 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95;
+  }
+
+  .btn-secondary {
+    @apply glass-dark hover:bg-dark-800/50 text-dark-100 font-medium px-6 py-3 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95;
+  }
+
+  .btn-accent {
+    @apply bg-gradient-accent hover:shadow-glow text-white font-medium px-6 py-3 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95;
+  }
+
+  .btn-ghost {
+    @apply text-dark-300 hover:text-white hover:bg-dark-800/50 font-medium px-4 py-2 rounded-lg transition-all duration-300;
+  }
+
+  /* Card styles */
+  .card {
+    @apply glass-dark rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300;
+  }
+
+  .card-hover {
+    @apply card hover:scale-105 hover:shadow-glow;
+  }
+
+  /* Input styles */
+  .input {
+    @apply bg-dark-800/50 border border-dark-600 text-dark-100 placeholder-dark-400 rounded-xl px-4 py-3 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-300;
+  }
+
+  .input-error {
+    @apply input border-danger-500 focus:border-danger-500 focus:ring-danger-500/20;
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    @apply bg-dark-700 rounded-full overflow-hidden;
+  }
+
+  .progress-fill {
+    @apply bg-gradient-primary h-full transition-all duration-500 ease-out;
+  }
+
+  /* Badge styles */
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply badge bg-primary-500/20 text-primary-300 border border-primary-500/30;
+  }
+
+  .badge-success {
+    @apply badge bg-success-500/20 text-success-300 border border-success-500/30;
+  }
+
+  .badge-warning {
+    @apply badge bg-warning-500/20 text-warning-300 border border-warning-500/30;
+  }
+
+  .badge-danger {
+    @apply badge bg-danger-500/20 text-danger-300 border border-danger-500/30;
+  }
+
+  /* Loading spinner */
+  .spinner {
+    @apply animate-spin rounded-full border-2 border-dark-600 border-t-primary-500;
+  }
+
+  /* Shimmer effect */
+  .shimmer {
+    @apply relative overflow-hidden;
+  }
+
+  .shimmer::before {
+    @apply absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent;
+    content: '';
+  }
+
+  /* Floating animation */
+  .float {
+    @apply animate-float;
+  }
+
+  /* Glow effect */
+  .glow {
+    @apply animate-glow;
+  }
+
+  /* Gradient border */
+  .gradient-border {
+    @apply relative;
+  }
+
+  .gradient-border::before {
+    @apply absolute inset-0 rounded-xl p-[1px] bg-gradient-primary;
+    content: '';
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+  }
+
+  /* Stats card */
+  .stats-card {
+    @apply card relative overflow-hidden;
+  }
+
+  .stats-card::before {
+    @apply absolute top-0 left-0 w-full h-1 bg-gradient-primary;
+    content: '';
+  }
+
+  /* Navigation */
+  .nav-link {
+    @apply text-dark-300 hover:text-white px-4 py-2 rounded-lg transition-all duration-300 hover:bg-dark-800/50;
+  }
+
+  .nav-link-active {
+    @apply nav-link text-primary-400 bg-primary-500/10 border border-primary-500/20;
+  }
+
+  /* Modal backdrop */
+  .modal-backdrop {
+    @apply fixed inset-0 bg-black/50 backdrop-blur-sm z-50;
+  }
+
+  /* Toast styles */
+  .toast-success {
+    @apply bg-success-500/10 border border-success-500/20 text-success-300;
+  }
+
+  .toast-error {
+    @apply bg-danger-500/10 border border-danger-500/20 text-danger-300;
+  }
+
+  .toast-warning {
+    @apply bg-warning-500/10 border border-warning-500/20 text-warning-300;
+  }
+
+  .toast-info {
+    @apply bg-primary-500/10 border border-primary-500/20 text-primary-300;
+  }
+}
+
+@layer utilities {
+  /* Text gradient utilities */
+  .text-gradient-primary {
+    @apply bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-accent {
+    @apply bg-gradient-to-r from-accent-400 to-accent-600 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-success {
+    @apply bg-gradient-to-r from-success-400 to-success-600 bg-clip-text text-transparent;
+  }
+
+  /* Background gradient utilities */
+  .bg-gradient-mesh {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #a855f7 75%, #667eea 100%);
+    background-size: 400% 400%;
+    animation: gradient-xy 15s ease infinite;
+  }
+
+  /* Animation utilities */
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
