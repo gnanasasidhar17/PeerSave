@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Registration</title>
+</head>
+<body>
+    <h1>Test Registration</h1>
+    <button onclick="testRegistration()">Test Registration</button>
+    <div id="result"></div>
+
+    <script>
+        async function testRegistration() {
+            const userData = {
+                firstName: "TestUser",
+                lastName: "Frontend",
+                username: "testfrontend123",
+                email: "testfrontend@example.com",
+                password: "password123"
+            };
+
+            try {
+                console.log('🚀 Testing registration from frontend...');
+                console.log('📝 Data being sent:', userData);
+                
+                const response = await fetch('http://localhost:5000/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(userData)
+                });
+
+                console.log('📡 Response status:', response.status);
+                console.log('📡 Response headers:', [...response.headers.entries()]);
+                
+                const data = await response.json();
+                console.log('📋 Response data:', data);
+                
+                document.getElementById('result').innerHTML = `
+                    <h3>Registration Result:</h3>
+                    <p>Status: ${response.status}</p>
+                    <p>Success: ${response.ok}</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                
+                if (response.ok) {
+                    console.log('✅ Registration successful!');
+                    console.log('🔑 Token:', data.data.token);
+                    localStorage.setItem('token', data.data.token);
+                    localStorage.setItem('refreshToken', data.data.refreshToken);
+                    console.log('💾 Tokens stored in localStorage');
+                } else {
+                    console.error('❌ Registration failed:', data);
+                }
+            } catch (error) {
+                console.error('🔥 Network error:', error);
+                document.getElementById('result').innerHTML = `
+                    <h3>Error:</h3>
+                    <pre>${error.message}</pre>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
