@@ -65,7 +65,7 @@ const authenticateToken = async (req, res, next) => {
 // Middleware to check if user is admin of a group
 const checkGroupAdmin = async (req, res, next) => {
   try {
-    const { groupId } = req.params;
+    const groupId = req.params.id;
     const userId = req.user._id;
 
     const Group = require('../models/Group');
@@ -114,7 +114,7 @@ const checkGroupAdmin = async (req, res, next) => {
 // Middleware to check if user is member of a group
 const checkGroupMember = async (req, res, next) => {
   try {
-    const { groupId } = req.params;
+    const groupId = req.params.id;
     const userId = req.user._id;
 
     const Group = require('../models/Group');

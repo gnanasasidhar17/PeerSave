@@ -4,7 +4,7 @@ import {
   Target, 
   Users, 
   TrendingUp, 
-  DollarSign, 
+  IndianRupee, 
   Calendar,
   Award,
   Plus,
@@ -15,103 +15,45 @@ import { useAuth } from '../contexts/AuthContext';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Navigation from '../components/Navigation';
+import { useQuery } from '@tanstack/react-query';
+import { dashboardAPI } from '../services/api';
+import { useNavigate } from 'react-router-dom';
 
 const DashboardPage = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const { data } = useQuery({
+    queryKey: ['dashboard-overview'],
+    queryFn: () => dashboardAPI.getOverview(),
+    refetchOnWindowFocus: false,
+  });
 
-  // Mock data - in real app, this would come from API
-  const stats = [
-    {
-      title: 'Total Saved',
-      value: '$2,450',
-      change: '+12.5%',
-      changeType: 'positive',
-      icon: <DollarSign className="w-6 h-6" />,
-      color: 'success'
-    },
-    {
-      title: 'Active Groups',
-      value: '3',
-      change: '+1',
-      changeType: 'positive',
-      icon: <Users className="w-6 h-6" />,
-      color: 'primary'
-    },
-    {
-      title: 'Goals Completed',
-      value: '7',
-      change: '+2',
-      changeType: 'positive',
-      icon: <Target className="w-6 h-6" />,
-      color: 'accent'
-    },
-    {
-      title: 'Current Streak',
-      value: '15 days',
-      change: '+3',
-      changeType: 'positive',
-      icon: <TrendingUp className="w-6 h-6" />,
-      color: 'warning'
-    }
-  ];
-
+  const overview = data?.data || {};
   const recentActivity = [
-    {
+    ...(overview.recentActivity?.contributions || []).map(c => ({
       type: 'contribution',
-      title: 'Added $50 to "Vacation Fund"',
-      time: '2 hours ago',
-      amount: '+$50',
-      positive: true
-    },
-    {
+      title: `Added ${formatCurrency(c.amount)} to "${c.group?.name || 'Group'}"`,
+      time: new Date(c.contributionDate).toLocaleString(),
+      amount: `+${formatCurrency(c.amount)}`,
+      positive: true,
+    })),
+    ...(overview.recentActivity?.goals || []).map(g => ({
       type: 'goal',
-      title: 'Completed "Emergency Fund" goal',
-      time: '1 day ago',
-      amount: '$1,000',
-      positive: true
-    },
-    {
-      type: 'group',
-      title: 'Joined "Family Savings" group',
-      time: '2 days ago',
+      title: `Goal "${g.title || g.name}" updated`,
+      time: new Date(g.createdAt).toLocaleString(),
       amount: '',
-      positive: true
-    },
-    {
-      type: 'achievement',
-      title: 'Earned "Saver" badge',
-      time: '3 days ago',
-      amount: '',
-      positive: true
-    }
-  ];
+      positive: true,
+    })),
+  ].slice(0, 6);
 
-  const upcomingGoals = [
-    {
-      title: 'New Laptop',
-      target: '$1,200',
-      current: '$800',
-      progress: 67,
-      deadline: '2 months',
-      priority: 'high'
-    },
-    {
-      title: 'Emergency Fund',
-      target: '$5,000',
-      current: '$3,200',
-      progress: 64,
-      deadline: '6 months',
-      priority: 'medium'
-    },
-    {
-      title: 'Vacation',
-      target: '$2,000',
-      current: '$1,100',
-      progress: 55,
-      deadline: '4 months',
-      priority: 'low'
-    }
-  ];
+  const upcomingGoals = (overview.recentActivity?.goals || []).map(g => ({
+    title: g.title || g.name,
+    target: formatCurrency(g.targetAmount || 0),
+    current: formatCurrency(g.currentAmount || 0),
+    progress: Math.round(g.progressPercentage || 0),
+    deadline: `${Math.max(0, g.daysRemaining || 0)} days`,
+    priority: (g.priority || 'medium')
+  }));
 
   const getPriorityColor = (priority) => {
     switch (priority) {
@@ -120,6 +62,14 @@ const DashboardPage = () => {
       case 'low': return 'success';
       default: return 'primary';
     }
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 2,
+    }).format(Number(amount || 0));
   };
 
   return (
@@ -143,7 +93,35 @@ const DashboardPage = () => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => (
+          {[{
+              title: 'Total Saved',
+              value: formatCurrency(overview.user?.totalSaved || 0),
+              change: '',
+              changeType: 'positive',
+              icon: <IndianRupee className="w-6 h-6" />,
+              color: 'success'
+            },{
+              title: 'Active Groups',
+              value: String(overview.groups?.active || 0),
+              change: '',
+              changeType: 'positive',
+              icon: <Users className="w-6 h-6" />,
+              color: 'primary'
+            },{
+              title: 'Goals Completed',
+              value: String((overview.stats?.recent?.totalContributions || 0)),
+              change: '',
+              changeType: 'positive',
+              icon: <Target className="w-6 h-6" />,
+              color: 'accent'
+            },{
+              title: 'Current Streak',
+              value: String(overview.stats?.streak?.current || 0) + ' days',
+              change: '',
+              changeType: 'positive',
+              icon: <TrendingUp className="w-6 h-6" />,
+              color: 'warning'
+            }].map((stat, index) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, y: 20 }}
@@ -260,7 +238,7 @@ const DashboardPage = () => {
                     </motion.div>
                   ))}
                 </div>
-                <Button variant="ghost" className="w-full mt-4">
+                <Button variant="ghost" className="w-full mt-4" onClick={() => navigate('/goals')}>
                   <Plus className="w-4 h-4 mr-2" />
                   Add New Goal
                 </Button>
@@ -283,16 +261,16 @@ const DashboardPage = () => {
             </Card.Header>
             <Card.Content>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Button variant="primary" className="h-16 flex-col space-y-2">
+                <Button variant="primary" className="h-16 flex-col space-y-2" onClick={() => navigate('/goals')}>
                   <Target className="w-6 h-6" />
                   <span>Create Goal</span>
                 </Button>
-                <Button variant="accent" className="h-16 flex-col space-y-2">
+                <Button variant="accent" className="h-16 flex-col space-y-2" onClick={() => navigate('/groups')}>
                   <Users className="w-6 h-6" />
                   <span>Join Group</span>
                 </Button>
-                <Button variant="secondary" className="h-16 flex-col space-y-2">
-                  <DollarSign className="w-6 h-6" />
+                <Button variant="secondary" className="h-16 flex-col space-y-2" onClick={() => navigate('/contributions')}>
+                  <IndianRupee className="w-6 h-6" />
                   <span>Add Contribution</span>
                 </Button>
               </div>

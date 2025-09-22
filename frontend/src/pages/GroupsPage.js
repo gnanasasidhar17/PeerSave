@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { 
@@ -24,6 +24,7 @@ import Input from '../components/Input';
 import LoadingSpinner from '../components/LoadingSpinner';
 import CreateGroupModal from '../components/CreateGroupModal';
 import JoinGroupModal from '../components/JoinGroupModal';
+import Navigation from '../components/Navigation';
 import { groupsAPI } from '../services/api';
 
 const GroupsPage = () => {
@@ -34,27 +35,31 @@ const GroupsPage = () => {
   const queryClient = useQueryClient();
 
   // Fetch user's groups
-  const { data: groupsData, isLoading: groupsLoading, error: groupsError } = useQuery(
-    ['groups', searchQuery],
-    () => groupsAPI.getGroups({ q: searchQuery }),
-    {
-      refetchOnWindowFocus: false,
-    }
-  );
+  const { data: groupsData, isLoading: groupsLoading, error: groupsError } = useQuery({
+    queryKey: ['groups', searchQuery],
+    queryFn: () => {
+      const params = searchQuery.trim() ? { q: searchQuery } : {};
+      return groupsAPI.getGroups(params);
+    },
+    refetchOnWindowFocus: false,
+  });
 
   // Fetch public groups
-  const { data: publicGroupsData, isLoading: publicGroupsLoading } = useQuery(
-    ['public-groups', searchQuery],
-    () => groupsAPI.getPublicGroups({ q: searchQuery }),
-    {
-      refetchOnWindowFocus: false,
-    }
-  );
+  const { data: publicGroupsData, isLoading: publicGroupsLoading } = useQuery({
+    queryKey: ['public-groups', searchQuery],
+    queryFn: () => {
+      const params = searchQuery.trim() ? { q: searchQuery } : {};
+      return groupsAPI.getPublicGroups(params);
+    },
+    refetchOnWindowFocus: false,
+  });
 
   // Create group mutation
-  const createGroupMutation = useMutation(groupsAPI.createGroup, {
+  const createGroupMutation = useMutation({
+    mutationFn: groupsAPI.createGroup,
     onSuccess: () => {
-      queryClient.invalidateQueries('groups');
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+      queryClient.invalidateQueries({ queryKey: ['public-groups'] });
       setShowCreateModal(false);
       toast.success('Group created successfully!');
     },
@@ -64,10 +69,11 @@ const GroupsPage = () => {
   });
 
   // Join group mutation
-  const joinGroupMutation = useMutation(groupsAPI.joinGroup, {
+  const joinGroupMutation = useMutation({
+    mutationFn: groupsAPI.joinGroup,
     onSuccess: () => {
-      queryClient.invalidateQueries('groups');
-      queryClient.invalidateQueries('public-groups');
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+      queryClient.invalidateQueries({ queryKey: ['public-groups'] });
       setShowJoinModal(false);
       toast.success('Successfully joined group!');
     },
@@ -77,9 +83,10 @@ const GroupsPage = () => {
   });
 
   // Leave group mutation
-  const leaveGroupMutation = useMutation(groupsAPI.leaveGroup, {
+  const leaveGroupMutation = useMutation({
+    mutationFn: groupsAPI.leaveGroup,
     onSuccess: () => {
-      queryClient.invalidateQueries('groups');
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
       toast.success('Successfully left group!');
     },
     onError: (error) => {
@@ -88,9 +95,10 @@ const GroupsPage = () => {
   });
 
   // Delete group mutation
-  const deleteGroupMutation = useMutation(groupsAPI.deleteGroup, {
+  const deleteGroupMutation = useMutation({
+    mutationFn: groupsAPI.deleteGroup,
     onSuccess: () => {
-      queryClient.invalidateQueries('groups');
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
       toast.success('Group deleted successfully!');
     },
     onError: (error) => {
@@ -98,11 +106,19 @@ const GroupsPage = () => {
     },
   });
 
-  const groups = groupsData?.data?.data || [];
-  const publicGroups = publicGroupsData?.data?.data || [];
+  const groups = groupsData?.data?.data?.data || [];
+  const publicGroups = publicGroupsData?.data?.data?.data || [];
 
   const handleCreateGroup = (data) => {
-    createGroupMutation.mutate(data);
+    const payload = {
+      name: data.name,
+      description: data.description,
+      totalGoal: typeof data.totalGoal === 'string' ? parseFloat(data.totalGoal) : data.totalGoal,
+      goalDeadline: data.goalDeadline,
+      privacy: data.privacy || 'public',
+      currency: 'INR',
+    };
+    createGroupMutation.mutate(payload);
   };
 
   const handleJoinGroup = (groupId) => {
@@ -122,10 +138,11 @@ const GroupsPage = () => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD',
-    }).format(amount);
+      currency: 'INR',
+      maximumFractionDigits: 2,
+    }).format(Number(amount || 0));
   };
 
   const formatDate = (date) => {
@@ -153,7 +170,9 @@ const GroupsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-dark-950 p-6">
+    <div className="min-h-screen bg-dark-950">
+      <Navigation />
+      <div className="p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
@@ -372,6 +391,7 @@ const GroupsPage = () => {
             </div>
           )}
         </motion.div>
+      </div>
       </div>
 
       {/* Create Group Modal */}

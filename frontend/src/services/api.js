@@ -40,7 +40,8 @@ api.interceptors.response.use(
             { refreshToken }
           );
 
-          const { token, refreshToken: newRefreshToken } = response.data;
+          const token = response.data?.data?.token;
+          const newRefreshToken = response.data?.data?.refreshToken;
           localStorage.setItem('token', token);
           localStorage.setItem('refreshToken', newRefreshToken);
 

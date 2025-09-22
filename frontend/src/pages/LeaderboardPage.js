@@ -10,7 +10,7 @@ import {
   Zap, 
   Star,
   Calendar,
-  DollarSign,
+  IndianRupee,
   Award,
   Filter,
   RefreshCw
@@ -20,173 +20,23 @@ import Button from '../components/Button';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Navigation from '../components/Navigation';
 import { format } from 'date-fns';
+import { useQuery } from '@tanstack/react-query';
+import { dashboardAPI } from '../services/api';
 
 const LeaderboardPage = () => {
   const [activeTab, setActiveTab] = useState('individual');
   const [timeFilter, setTimeFilter] = useState('all');
   const [groupFilter, setGroupFilter] = useState('all');
 
-  // State for loading and data
-  const [isLoading, setIsLoading] = useState(false);
-  const [individualData, setIndividualData] = useState(null);
-  const [groupsData, setGroupsData] = useState(null);
-  const [streaksData, setStreaksData] = useState(null);
-  const [achievementsData, setAchievementsData] = useState(null);
-  const [statsData, setStatsData] = useState(null);
-
-  // Mock data for fallback - will be replaced with API calls
-  const mockLeaderboardData = {
-    individual: [
-      {
-        rank: 1,
-        name: "Alex Johnson",
-        avatar: "AJ",
-        totalSaved: 2450,
-        goalsCompleted: 7,
-        streak: 15,
-        groups: 3,
-        badge: "Savings Master",
-        badgeColor: "text-yellow-400"
-      },
-      {
-        rank: 2,
-        name: "Sarah Chen",
-        avatar: "SC",
-        totalSaved: 2100,
-        goalsCompleted: 5,
-        streak: 12,
-        groups: 2,
-        badge: "Consistent Saver",
-        badgeColor: "text-blue-400"
-      },
-      {
-        rank: 3,
-        name: "Mike Rodriguez",
-        avatar: "MR",
-        totalSaved: 1850,
-        goalsCompleted: 4,
-        streak: 8,
-        groups: 4,
-        badge: "Group Leader",
-        badgeColor: "text-green-400"
-      },
-      {
-        rank: 4,
-        name: "Emma Wilson",
-        avatar: "EW",
-        totalSaved: 1650,
-        goalsCompleted: 6,
-        streak: 10,
-        groups: 2,
-        badge: "Goal Crusher",
-        badgeColor: "text-purple-400"
-      },
-      {
-        rank: 5,
-        name: "David Kim",
-        avatar: "DK",
-        totalSaved: 1400,
-        goalsCompleted: 3,
-        streak: 6,
-        groups: 3,
-        badge: "Rising Star",
-        badgeColor: "text-orange-400"
-      }
-    ],
-    groups: [
-      {
-        rank: 1,
-        name: "Vacation Squad",
-        members: 5,
-        totalSaved: 8500,
-        goalAmount: 10000,
-        progress: 85,
-        daysLeft: 30,
-        leader: "Alex Johnson",
-        badge: "Top Group",
-        badgeColor: "text-yellow-400"
-      },
-      {
-        rank: 2,
-        name: "Emergency Fund Team",
-        members: 4,
-        totalSaved: 6800,
-        goalAmount: 8000,
-        progress: 85,
-        daysLeft: 45,
-        leader: "Sarah Chen",
-        badge: "Consistent Performers",
-        badgeColor: "text-blue-400"
-      },
-      {
-        rank: 3,
-        name: "Gadget Hunters",
-        members: 6,
-        totalSaved: 4200,
-        goalAmount: 6000,
-        progress: 70,
-        daysLeft: 60,
-        leader: "Mike Rodriguez",
-        badge: "Active Contributors",
-        badgeColor: "text-green-400"
-      }
-    ],
-    streaks: [
-      {
-        rank: 1,
-        name: "Alex Johnson",
-        avatar: "AJ",
-        streak: 15,
-        totalDays: 45,
-        badge: "Streak Master",
-        badgeColor: "text-yellow-400"
-      },
-      {
-        rank: 2,
-        name: "Sarah Chen",
-        avatar: "SC",
-        streak: 12,
-        totalDays: 38,
-        badge: "Consistent",
-        badgeColor: "text-blue-400"
-      },
-      {
-        rank: 3,
-        name: "Emma Wilson",
-        avatar: "EW",
-        streak: 10,
-        totalDays: 32,
-        badge: "Dedicated",
-        badgeColor: "text-purple-400"
-      }
-    ],
-    achievements: [
-      {
-        rank: 1,
-        name: "Emma Wilson",
-        avatar: "EW",
-        achievements: 8,
-        recentBadge: "Goal Crusher",
-        badgeColor: "text-purple-400"
-      },
-      {
-        rank: 2,
-        name: "Alex Johnson",
-        avatar: "AJ",
-        achievements: 7,
-        recentBadge: "Savings Master",
-        badgeColor: "text-yellow-400"
-      },
-      {
-        rank: 3,
-        name: "Sarah Chen",
-        avatar: "SC",
-        achievements: 6,
-        recentBadge: "Consistent Saver",
-        badgeColor: "text-blue-400"
-      }
-    ]
-  };
+  // Fetch real leaderboard data
+  const periodMap = { all: '1y', month: '30d', week: '7d' };
+  const typeMap = { individual: 'global', groups: 'global', streaks: 'streak', achievements: 'global' };
+  const { data: lbData, isLoading } = useQuery({
+    queryKey: ['leaderboard', activeTab, timeFilter],
+    queryFn: () => dashboardAPI.getLeaderboard({ params: { type: typeMap[activeTab], period: periodMap[timeFilter] } }),
+    refetchOnWindowFocus: false,
+  });
+  const leaderboard = lbData?.data?.data?.leaderboard || [];
 
   const tabs = [
     { id: 'individual', label: 'Top Savers', icon: Trophy },
@@ -211,15 +61,34 @@ const LeaderboardPage = () => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD',
-    }).format(amount);
+      currency: 'INR',
+      maximumFractionDigits: 2,
+    }).format(Number(amount || 0));
   };
 
   const renderIndividualLeaderboard = () => {
     if (isLoading) return <LoadingSpinner />;
-    const data = individualData || mockLeaderboardData.individual;
+    const data = leaderboard.map((u, idx) => ({
+      rank: u.rank || idx + 1,
+      name: u.firstName ? `${u.firstName} ${u.lastName || ''}`.trim() : (u.username || 'User'),
+      avatar: (u.firstName?.[0] || u.username?.[0] || 'U').toUpperCase(),
+      totalSaved: u.totalSaved || u.totalAmount || 0,
+      goalsCompleted: u.totalContributions || 0,
+      streak: u.currentStreak || 0,
+      badge: '',
+      badgeColor: '',
+    }));
+    if (!data.length) {
+      return (
+        <Card className="p-12 text-center">
+          <Trophy className="w-16 h-16 text-dark-400 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-white mb-2">No leaderboard data yet</h3>
+          <p className="text-dark-400">Make some contributions to appear here.</p>
+        </Card>
+      );
+    }
     
     return (
       <div className="space-y-4">
@@ -247,7 +116,7 @@ const LeaderboardPage = () => {
                   </div>
                   <div className="flex items-center space-x-4 text-sm text-dark-300">
                     <span className="flex items-center space-x-1">
-                      <DollarSign className="w-4 h-4" />
+                      <IndianRupee className="w-4 h-4" />
                       <span>{formatCurrency(user.totalSaved)}</span>
                     </span>
                     <span className="flex items-center space-x-1">
@@ -273,7 +142,27 @@ const LeaderboardPage = () => {
 
   const renderGroupLeaderboard = () => {
     if (isLoading) return <LoadingSpinner />;
-    const data = groupsData || mockLeaderboardData.groups;
+    const data = leaderboard.map((g, idx) => ({
+      rank: g.rank || idx + 1,
+      name: g.name || 'Group',
+      members: g.memberCount || 0,
+      totalSaved: g.currentAmount || 0,
+      goalAmount: g.totalGoal || 0,
+      progress: Math.round((g.currentAmount && g.totalGoal) ? (g.currentAmount / g.totalGoal) * 100 : 0),
+      daysLeft: 0,
+      leader: '',
+      badge: '',
+      badgeColor: ''
+    }));
+    if (!data.length) {
+      return (
+        <Card className="p-12 text-center">
+          <Users className="w-16 h-16 text-dark-400 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-white mb-2">No group data yet</h3>
+          <p className="text-dark-400">Once your groups start contributing, they will appear here.</p>
+        </Card>
+      );
+    }
     
     return (
       <div className="space-y-4">
@@ -333,7 +222,24 @@ const LeaderboardPage = () => {
 
   const renderStreakLeaderboard = () => {
     if (isLoading) return <LoadingSpinner />;
-    const data = streaksData || mockLeaderboardData.streaks;
+    const data = leaderboard.map((u, idx) => ({
+      rank: u.rank || idx + 1,
+      name: u.firstName ? `${u.firstName} ${u.lastName || ''}`.trim() : (u.username || 'User'),
+      avatar: (u.firstName?.[0] || u.username?.[0] || 'U').toUpperCase(),
+      streak: u.currentStreak || 0,
+      totalDays: u.longestStreak || u.currentStreak || 0,
+      badge: '',
+      badgeColor: ''
+    }));
+    if (!data.length) {
+      return (
+        <Card className="p-12 text-center">
+          <Zap className="w-16 h-16 text-dark-400 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-white mb-2">No streaks yet</h3>
+          <p className="text-dark-400">Contribute regularly to start a streak.</p>
+        </Card>
+      );
+    }
     
     return (
       <div className="space-y-4">
@@ -383,7 +289,23 @@ const LeaderboardPage = () => {
 
   const renderAchievementLeaderboard = () => {
     if (isLoading) return <LoadingSpinner />;
-    const data = achievementsData || mockLeaderboardData.achievements;
+    const data = leaderboard.map((u, idx) => ({
+      rank: u.rank || idx + 1,
+      name: u.firstName ? `${u.firstName} ${u.lastName || ''}`.trim() : (u.username || 'User'),
+      avatar: (u.firstName?.[0] || u.username?.[0] || 'U').toUpperCase(),
+      achievements: u.totalContributions || 0,
+      recentBadge: '',
+      badgeColor: ''
+    }));
+    if (!data.length) {
+      return (
+        <Card className="p-12 text-center">
+          <Award className="w-16 h-16 text-dark-400 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-white mb-2">No achievements yet</h3>
+          <p className="text-dark-400">Earn badges by saving and reaching milestones.</p>
+        </Card>
+      );
+    }
     
     return (
       <div className="space-y-4">
@@ -440,6 +362,11 @@ const LeaderboardPage = () => {
       default: return renderIndividualLeaderboard();
     }
   };
+
+  // Summary metrics derived from the current leaderboard payload
+  const totalSavedSum = leaderboard.reduce((sum, e) => sum + (e.totalSaved || e.totalAmount || e.currentAmount || 0), 0);
+  const totalContribSum = leaderboard.reduce((sum, e) => sum + (e.totalContributions || 0), 0);
+  const totalUsersOrGroups = leaderboard.length;
 
   return (
     <div className="min-h-screen bg-dark-950">
@@ -538,25 +465,25 @@ const LeaderboardPage = () => {
         >
           <Card className="p-6 text-center">
             <div className="text-3xl font-bold text-primary-400 mb-2">
-              {isLoading ? '...' : (statsData?.totalUsers || '1,247')}
+              {isLoading ? '...' : totalUsersOrGroups}
             </div>
-            <div className="text-dark-300">Total Users</div>
+            <div className="text-dark-300">{activeTab === 'groups' ? 'Total Groups' : 'Total Users'}</div>
           </Card>
           <Card className="p-6 text-center">
             <div className="text-3xl font-bold text-accent-400 mb-2">
-              {isLoading ? '...' : formatCurrency(statsData?.totalSaved || 89450)}
+              {isLoading ? '...' : formatCurrency(totalSavedSum)}
             </div>
             <div className="text-dark-300">Total Saved</div>
           </Card>
           <Card className="p-6 text-center">
             <div className="text-3xl font-bold text-success-400 mb-2">
-              {isLoading ? '...' : (statsData?.goalsCompleted || '342')}
+              {isLoading ? '...' : totalContribSum}
             </div>
-            <div className="text-dark-300">Goals Completed</div>
+            <div className="text-dark-300">Total Contributions</div>
           </Card>
           <Card className="p-6 text-center">
             <div className="text-3xl font-bold text-warning-400 mb-2">
-              {isLoading ? '...' : (statsData?.totalGroups || '89')}
+              {isLoading ? '...' : (activeTab === 'groups' ? totalUsersOrGroups : '--')}
             </div>
             <div className="text-dark-300">Active Groups</div>
           </Card>

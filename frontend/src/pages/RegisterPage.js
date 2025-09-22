@@ -36,7 +36,7 @@ const RegisterPage = () => {
   const checkUsername = async (username) => {
     if (username && username.length >= 3) {
       try {
-        const response = await fetch(`/api/auth/check-username/${username}`);
+        const response = await fetch(`http://localhost:5000/api/auth/check-username/${username}`);
         const data = await response.json();
         setIsUsernameAvailable(data.isAvailable);
       } catch (error) {
@@ -49,7 +49,7 @@ const RegisterPage = () => {
   const checkEmail = async (email) => {
     if (email && email.includes('@')) {
       try {
-        const response = await fetch(`/api/auth/check-email/${email}`);
+        const response = await fetch(`http://localhost:5000/api/auth/check-email/${email}`);
         const data = await response.json();
         setIsEmailAvailable(data.isAvailable);
       } catch (error) {
@@ -59,9 +59,21 @@ const RegisterPage = () => {
   };
 
   const onSubmit = async (data) => {
-    const result = await registerUser(data);
+    console.log('📝 Form submission data:', data);
+    console.log('✅ Username available:', isUsernameAvailable);
+    console.log('✅ Email available:', isEmailAvailable);
+    
+    // Clean up the data - remove confirmPassword and terms before sending to API
+    const { confirmPassword, terms, ...cleanData } = data;
+    console.log('🧹 Cleaned data for API:', cleanData);
+    
+    const result = await registerUser(cleanData);
+    console.log('📋 Registration result:', result);
+    
     if (result.success) {
       navigate('/dashboard', { replace: true });
+    } else {
+      console.error('💥 Registration failed:', result.error);
     }
   };
 
@@ -218,10 +230,6 @@ const RegisterPage = () => {
                   minLength: {
                     value: 6,
                     message: 'Password must be at least 6 characters',
-                  },
-                  pattern: {
-                    value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-                    message: 'Password must contain uppercase, lowercase, and number',
                   },
                 })}
               />

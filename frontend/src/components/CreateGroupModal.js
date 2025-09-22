@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
-import { X, Users, DollarSign, Calendar, Lock, Globe } from 'lucide-react';
+import { X, Users, IndianRupee, Calendar, Lock, Globe } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
 import Input from './Input';
@@ -77,11 +77,11 @@ const CreateGroupModal = ({ onClose, onSubmit, isLoading }) => {
               <Input
                 {...register('totalGoal', { 
                   required: 'Goal amount is required',
-                  min: { value: 1, message: 'Goal must be at least $1' }
+                  min: { value: 1, message: 'Goal must be at least ₹1' }
                 })}
                 type="number"
                 placeholder="0.00"
-                leftIcon={<DollarSign className="w-5 h-5" />}
+                leftIcon={<IndianRupee className="w-5 h-5" />}
                 error={errors.totalGoal?.message}
               />
             </div>

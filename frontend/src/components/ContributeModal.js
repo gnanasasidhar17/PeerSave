@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
-import { X, DollarSign, FileText, Target } from 'lucide-react';
+import { X, IndianRupee, Target } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
 import Input from './Input';
@@ -14,10 +14,11 @@ const ContributeModal = ({ goal, onClose, onSubmit, isLoading }) => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD',
-    }).format(amount);
+      currency: 'INR',
+      maximumFractionDigits: 2,
+    }).format(Number(amount || 0));
   };
 
   const remainingAmount = (goal.targetAmount || 0) - (goal.currentAmount || 0);
@@ -81,7 +82,7 @@ const ContributeModal = ({ goal, onClose, onSubmit, isLoading }) => {
               <Input
                 {...register('amount', { 
                   required: 'Amount is required',
-                  min: { value: 0.01, message: 'Amount must be at least $0.01' },
+                  min: { value: 0.01, message: 'Amount must be at least ₹0.01' },
                   max: { 
                     value: remainingAmount, 
                     message: `Amount cannot exceed remaining goal amount of ${formatCurrency(remainingAmount)}` 
@@ -90,7 +91,7 @@ const ContributeModal = ({ goal, onClose, onSubmit, isLoading }) => {
                 type="number"
                 step="0.01"
                 placeholder="0.00"
-                leftIcon={<DollarSign className="w-5 h-5" />}
+                leftIcon={<IndianRupee className="w-5 h-5" />}
                 error={errors.amount?.message}
               />
             </div>
@@ -113,7 +114,7 @@ const ContributeModal = ({ goal, onClose, onSubmit, isLoading }) => {
                 Quick Amounts
               </label>
               <div className="grid grid-cols-3 gap-2">
-                {[10, 25, 50, 100, 250, 500].map((amount) => (
+                {[100, 250, 500, 1000, 2500, 5000].map((amount) => (
                   <Button
                     key={amount}
                     type="button"
@@ -128,7 +129,7 @@ const ContributeModal = ({ goal, onClose, onSubmit, isLoading }) => {
                     }}
                     className="text-xs"
                   >
-                    ${amount}
+                    ₹{amount}
                   </Button>
                 ))}
               </div>

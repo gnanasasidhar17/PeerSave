@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, Search, Users, DollarSign, Calendar, UserPlus } from 'lucide-react';
+import { X, Search, Users, Calendar, UserPlus } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
 import Input from './Input';
@@ -8,16 +8,20 @@ import Input from './Input';
 const JoinGroupModal = ({ onClose, groups, onJoin, isLoading }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredGroups = groups.filter(group =>
+  // Ensure groups is always an array to prevent filter errors
+  const safeGroups = Array.isArray(groups) ? groups : [];
+  
+  const filteredGroups = safeGroups.filter(group =>
     group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     group.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD',
-    }).format(amount);
+      currency: 'INR',
+      maximumFractionDigits: 2,
+    }).format(Number(amount || 0));
   };
 
   const formatDate = (date) => {

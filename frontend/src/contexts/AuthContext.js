@@ -73,25 +73,38 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem('token');
+      const refreshToken = localStorage.getItem('refreshToken');
+      
+      console.log('🔍 AuthContext - Checking auth on app start:', {
+        hasToken: !!token,
+        hasRefreshToken: !!refreshToken,
+        tokenPreview: token ? token.substring(0, 20) + '...' : 'none'
+      });
+      
       if (token) {
         try {
           dispatch({ type: 'AUTH_START' });
+          console.log('📞 AuthContext - Fetching user profile...');
           const response = await authAPI.getProfile();
+          console.log('✅ AuthContext - Profile fetched successfully:', response.data);
+          
           dispatch({
             type: 'AUTH_SUCCESS',
             payload: {
-              user: response.data.user,
+              user: response.data?.data?.user,
               token,
               refreshToken: localStorage.getItem('refreshToken'),
             },
           });
         } catch (error) {
+          console.error('❌ AuthContext - Profile fetch failed:', error);
           // Token is invalid, clear it
           localStorage.removeItem('token');
           localStorage.removeItem('refreshToken');
           dispatch({ type: 'AUTH_FAILURE', payload: 'Session expired' });
         }
       } else {
+        console.log('❌ AuthContext - No token found, user not authenticated');
         dispatch({ type: 'AUTH_FAILURE', payload: null });
       }
     };
@@ -105,12 +118,16 @@ export function AuthProvider({ children }) {
       const response = await authAPI.login(credentials);
       
       // Store tokens
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('refreshToken', response.data.refreshToken);
+      localStorage.setItem('token', response.data?.data?.token);
+      localStorage.setItem('refreshToken', response.data?.data?.refreshToken);
       
       dispatch({
         type: 'AUTH_SUCCESS',
-        payload: response.data,
+        payload: {
+          user: response.data?.data?.user,
+          token: response.data?.data?.token,
+          refreshToken: response.data?.data?.refreshToken,
+        },
       });
       
       toast.success('Welcome back! 🎉');
@@ -126,20 +143,38 @@ export function AuthProvider({ children }) {
   const register = async (userData) => {
     try {
       dispatch({ type: 'AUTH_START' });
+      console.log('🚀 Attempting registration with data:', userData);
       const response = await authAPI.register(userData);
+      console.log('✅ Registration response:', response);
       
       // Store tokens
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('refreshToken', response.data.refreshToken);
+      console.log('💾 Storing token:', response.data?.data?.token ? 'Token received' : 'NO TOKEN!');
+      console.log('💾 Storing refreshToken:', response.data?.data?.refreshToken ? 'RefreshToken received' : 'NO REFRESH TOKEN!');
+      
+      localStorage.setItem('token', response.data?.data?.token);
+      localStorage.setItem('refreshToken', response.data?.data?.refreshToken);
+      
+      // Verify tokens were stored
+      const storedToken = localStorage.getItem('token');
+      const storedRefreshToken = localStorage.getItem('refreshToken');
+      console.log('✅ Token stored successfully:', !!storedToken);
+      console.log('✅ RefreshToken stored successfully:', !!storedRefreshToken);
       
       dispatch({
         type: 'AUTH_SUCCESS',
-        payload: response.data,
+        payload: {
+          user: response.data?.data?.user,
+          token: response.data?.data?.token,
+          refreshToken: response.data?.data?.refreshToken,
+        },
       });
       
       toast.success('Account created successfully! 🚀');
       return { success: true };
     } catch (error) {
+      console.error('❌ Registration error:', error);
+      console.error('❌ Error response:', error.response);
+      console.error('❌ Error data:', error.response?.data);
       const message = error.response?.data?.message || 'Registration failed';
       dispatch({ type: 'AUTH_FAILURE', payload: message });
       toast.error(message);
@@ -166,7 +201,7 @@ export function AuthProvider({ children }) {
       const response = await authAPI.updateProfile(userData);
       dispatch({
         type: 'UPDATE_USER',
-        payload: response.data.user,
+        payload: response.data?.data?.user,
       });
       toast.success('Profile updated successfully! ✨');
       return { success: true };
@@ -199,15 +234,15 @@ export function AuthProvider({ children }) {
       const response = await authAPI.refreshToken(refreshToken);
       
       // Update tokens
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('refreshToken', response.data.refreshToken);
+      localStorage.setItem('token', response.data?.data?.token);
+      localStorage.setItem('refreshToken', response.data?.data?.refreshToken);
       
       dispatch({
         type: 'AUTH_SUCCESS',
         payload: {
           user: state.user,
-          token: response.data.token,
-          refreshToken: response.data.refreshToken,
+          token: response.data?.data?.token,
+          refreshToken: response.data?.data?.refreshToken,
         },
       });
       

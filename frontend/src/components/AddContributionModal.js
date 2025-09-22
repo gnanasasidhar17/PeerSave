@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
-import { X, DollarSign, Users, FileText, CreditCard, Tag } from 'lucide-react';
+import { X, IndianRupee, Users, FileText, CreditCard, Tag } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
 import Input from './Input';
@@ -10,17 +10,29 @@ const AddContributionModal = ({ onClose, onSubmit, groups = [], isLoading }) => 
   const { register, handleSubmit, formState: { errors }, watch } = useForm();
 
   const selectedGroupId = watch('groupId');
-  const selectedGroup = groups.find(group => group._id === selectedGroupId);
+  const selectedGroup = Array.isArray(groups) ? groups.find(group => group._id === selectedGroupId) : null;
 
   const handleFormSubmit = (data) => {
-    onSubmit(data);
+    const payload = {
+      groupId: data.groupId,
+      amount: typeof data.amount === 'string' ? parseFloat(data.amount) : data.amount,
+      currency: 'INR',
+      type: data.type || 'regular',
+      category: data.category || 'savings',
+      paymentMethod: data.paymentMethod || 'bank_transfer',
+      description: data.description,
+      paymentReference: data.paymentReference,
+      notes: data.notes,
+    };
+    onSubmit(payload);
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD',
-    }).format(amount);
+      currency: 'INR',
+      maximumFractionDigits: 2,
+    }).format(Number(amount || 0));
   };
 
   return (
@@ -29,10 +41,10 @@ const AddContributionModal = ({ onClose, onSubmit, groups = [], isLoading }) => 
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="w-full max-w-md"
+        className="w-full max-w-md max-h-[85vh]"
       >
-        <Card className="p-6">
-          <div className="flex items-center justify-between mb-6">
+        <Card className="p-6 h-full flex flex-col">
+          <div className="flex items-center justify-between mb-6 shrink-0">
             <h2 className="text-2xl font-bold text-white">Add Contribution</h2>
             <Button
               variant="ghost"
@@ -44,7 +56,7 @@ const AddContributionModal = ({ onClose, onSubmit, groups = [], isLoading }) => 
             </Button>
           </div>
 
-          <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4 overflow-y-auto pr-1 flex-1">
             <div>
               <label className="block text-sm font-medium text-white mb-2">
                 Select Group
@@ -54,7 +66,7 @@ const AddContributionModal = ({ onClose, onSubmit, groups = [], isLoading }) => 
                 className="w-full px-4 py-3 bg-dark-800 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="">Choose a group...</option>
-                {groups.map((group) => (
+                {Array.isArray(groups) && groups.map((group) => (
                   <option key={group._id} value={group._id}>
                     {group.name}
                   </option>
@@ -99,12 +111,12 @@ const AddContributionModal = ({ onClose, onSubmit, groups = [], isLoading }) => 
               <Input
                 {...register('amount', { 
                   required: 'Amount is required',
-                  min: { value: 0.01, message: 'Amount must be at least $0.01' }
+                  min: { value: 0.01, message: 'Amount must be at least ₹0.01' }
                 })}
                 type="number"
                 step="0.01"
                 placeholder="0.00"
-                leftIcon={<DollarSign className="w-5 h-5" />}
+                leftIcon={<IndianRupee className="w-5 h-5" />}
                 error={errors.amount?.message}
               />
             </div>
@@ -119,8 +131,9 @@ const AddContributionModal = ({ onClose, onSubmit, groups = [], isLoading }) => 
               >
                 <option value="regular">Regular</option>
                 <option value="bonus">Bonus</option>
+                <option value="catch-up">Catch-up</option>
                 <option value="milestone">Milestone</option>
-                <option value="emergency">Emergency</option>
+                <option value="penalty">Penalty</option>
               </select>
             </div>
 
@@ -133,11 +146,11 @@ const AddContributionModal = ({ onClose, onSubmit, groups = [], isLoading }) => 
                 className="w-full px-4 py-3 bg-dark-800 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="savings">Savings</option>
-                <option value="investment">Investment</option>
-                <option value="debt">Debt Payment</option>
-                <option value="purchase">Purchase</option>
                 <option value="emergency">Emergency</option>
-                <option value="lifestyle">Lifestyle</option>
+                <option value="vacation">Vacation</option>
+                <option value="education">Education</option>
+                <option value="gift">Gift</option>
+                <option value="investment">Investment</option>
                 <option value="other">Other</option>
               </select>
             </div>
@@ -151,10 +164,10 @@ const AddContributionModal = ({ onClose, onSubmit, groups = [], isLoading }) => 
                 className="w-full px-4 py-3 bg-dark-800 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="bank_transfer">Bank Transfer</option>
-                <option value="credit_card">Credit Card</option>
-                <option value="debit_card">Debit Card</option>
+                <option value="card">Card</option>
+                <option value="upi">UPI</option>
+                <option value="digital_wallet">Digital Wallet</option>
                 <option value="cash">Cash</option>
-                <option value="check">Check</option>
                 <option value="other">Other</option>
               </select>
             </div>
@@ -194,7 +207,7 @@ const AddContributionModal = ({ onClose, onSubmit, groups = [], isLoading }) => 
               />
             </div>
 
-            <div className="flex space-x-3 pt-4">
+            <div className="flex space-x-3 pt-2 pb-1 shrink-0">
               <Button
                 type="button"
                 variant="outline"

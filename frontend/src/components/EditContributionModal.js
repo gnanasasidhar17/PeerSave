@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
-import { X, DollarSign, FileText, CreditCard, Tag } from 'lucide-react';
+import { X, IndianRupee, CreditCard } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
 import Input from './Input';
@@ -24,10 +24,11 @@ const EditContributionModal = ({ contribution, onClose, onSubmit, isLoading }) =
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD',
-    }).format(amount);
+      currency: 'INR',
+      maximumFractionDigits: 2,
+    }).format(Number(amount || 0));
   };
 
   return (
@@ -75,12 +76,12 @@ const EditContributionModal = ({ contribution, onClose, onSubmit, isLoading }) =
               <Input
                 {...register('amount', { 
                   required: 'Amount is required',
-                  min: { value: 0.01, message: 'Amount must be at least $0.01' }
+                  min: { value: 0.01, message: 'Amount must be at least ₹0.01' }
                 })}
                 type="number"
                 step="0.01"
                 placeholder="0.00"
-                leftIcon={<DollarSign className="w-5 h-5" />}
+                leftIcon={<IndianRupee className="w-5 h-5" />}
                 error={errors.amount?.message}
               />
             </div>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { 
@@ -13,14 +13,14 @@ import {
   Play,
   Pause,
   CheckCircle,
-  DollarSign,
   Calendar,
   Users,
   Eye,
   MoreVertical,
   TrendingUp,
   Clock,
-  Award
+  Award,
+  IndianRupee
 } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -28,6 +28,7 @@ import Input from '../components/Input';
 import LoadingSpinner from '../components/LoadingSpinner';
 import CreateGoalModal from '../components/CreateGoalModal';
 import ContributeModal from '../components/ContributeModal';
+import Navigation from '../components/Navigation';
 import { goalsAPI, groupsAPI } from '../services/api';
 
 const GoalsPage = () => {
@@ -37,34 +38,63 @@ const GoalsPage = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showContributeModal, setShowContributeModal] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState(null);
+  const [localGoals, setLocalGoals] = useState([]);
   const queryClient = useQueryClient();
 
   // Fetch user's goals
-  const { data: goalsData, isLoading: goalsLoading } = useQuery(
-    ['goals', searchQuery, statusFilter, typeFilter],
-    () => goalsAPI.getGoals({ 
+  const { data: goalsData, isLoading: goalsLoading } = useQuery({
+    queryKey: ['goals', searchQuery, statusFilter, typeFilter],
+    queryFn: () => goalsAPI.getGoals({ 
       q: searchQuery, 
       status: statusFilter !== 'all' ? statusFilter : undefined,
       type: typeFilter !== 'all' ? typeFilter : undefined
     }),
-    {
-      refetchOnWindowFocus: false,
+    refetchOnWindowFocus: false,
+    refetchOnMount: 'always',
+    staleTime: 0,
+    keepPreviousData: false,
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to load goals');
     }
-  );
+  });
 
   // Fetch user's groups for goal creation
-  const { data: groupsData } = useQuery(
-    'user-groups',
-    () => groupsAPI.getGroups(),
-    {
-      refetchOnWindowFocus: false,
-    }
-  );
+  const { data: groupsData } = useQuery({
+    queryKey: ['user-groups'],
+    queryFn: () => groupsAPI.getGroups(),
+    refetchOnWindowFocus: false,
+  });
 
   // Create goal mutation
-  const createGoalMutation = useMutation(goalsAPI.createGoal, {
-    onSuccess: () => {
-      queryClient.invalidateQueries('goals');
+  const createGoalMutation = useMutation({
+    mutationFn: goalsAPI.createGoal,
+    onSuccess: async (response) => {
+      // Optimistically add to any cached goals lists
+      const newGoal = response?.data?.data?.goal;
+      if (newGoal) {
+        // Local immediate add so user sees it right away
+        setLocalGoals((prev) => {
+          const exists = prev.some(g => g._id === newGoal._id);
+          return exists ? prev : [newGoal, ...prev];
+        });
+        queryClient.setQueriesData({ queryKey: ['goals'] }, (old) => {
+          if (!old) return old;
+          // old is axios response: { data: { success, message, data: { data: [...], pagination } } }
+          try {
+            const cloned = { ...old };
+            const arr = cloned?.data?.data?.data;
+            if (Array.isArray(arr)) {
+              cloned.data.data.data = [newGoal, ...arr];
+              return cloned;
+            }
+          } catch {}
+          return old;
+        });
+      }
+      await queryClient.invalidateQueries({ predicate: q => Array.isArray(q.queryKey) && q.queryKey[0] === 'goals' });
+      await queryClient.invalidateQueries({ queryKey: ['dashboard-overview'], exact: false });
+      // Force a refetch so the list updates immediately
+      await queryClient.refetchQueries({ predicate: q => Array.isArray(q.queryKey) && q.queryKey[0] === 'goals' });
       setShowCreateModal(false);
       toast.success('Goal created successfully!');
     },
@@ -74,23 +104,22 @@ const GoalsPage = () => {
   });
 
   // Update goal mutation
-  const updateGoalMutation = useMutation(
-    ({ id, data }) => goalsAPI.updateGoal(id, data),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries('goals');
-        toast.success('Goal updated successfully!');
-      },
-      onError: (error) => {
-        toast.error(error.response?.data?.message || 'Failed to update goal');
-      },
-    }
-  );
+  const updateGoalMutation = useMutation({
+    mutationFn: ({ id, data }) => goalsAPI.updateGoal(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
+      toast.success('Goal updated successfully!');
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to update goal');
+    },
+  });
 
   // Delete goal mutation
-  const deleteGoalMutation = useMutation(goalsAPI.deleteGoal, {
+  const deleteGoalMutation = useMutation({
+    mutationFn: goalsAPI.deleteGoal,
     onSuccess: () => {
-      queryClient.invalidateQueries('goals');
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
       toast.success('Goal deleted successfully!');
     },
     onError: (error) => {
@@ -99,40 +128,60 @@ const GoalsPage = () => {
   });
 
   // Contribute to goal mutation
-  const contributeMutation = useMutation(
-    ({ id, amount, description }) => goalsAPI.contributeToGoal(id, amount, description),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries('goals');
-        setShowContributeModal(false);
-        toast.success('Contribution added successfully!');
-      },
-      onError: (error) => {
-        toast.error(error.response?.data?.message || 'Failed to add contribution');
-      },
-    }
-  );
+  const contributeMutation = useMutation({
+    mutationFn: ({ id, amount, description }) => goalsAPI.contributeToGoal(id, amount, description),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
+      setShowContributeModal(false);
+      toast.success('Contribution added successfully!');
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to add contribution');
+    },
+  });
 
   // Pause/Resume goal mutation
-  const toggleGoalStatusMutation = useMutation(
-    ({ id, action }) => {
+  const toggleGoalStatusMutation = useMutation({
+    mutationFn: ({ id, action }) => {
       if (action === 'pause') return goalsAPI.pauseGoal(id);
       if (action === 'resume') return goalsAPI.resumeGoal(id);
       if (action === 'complete') return goalsAPI.completeGoal(id);
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries('goals');
-        toast.success('Goal status updated successfully!');
-      },
-      onError: (error) => {
-        toast.error(error.response?.data?.message || 'Failed to update goal status');
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
+      toast.success('Goal status updated successfully!');
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to update goal status');
+    },
+  });
 
-  const goals = goalsData?.data?.data || [];
-  const groups = groupsData?.data?.data || [];
+  const extractGoals = (resp) => {
+    if (!resp) return [];
+    const a = resp.data;
+    if (Array.isArray(a)) return a;
+    const b = a?.data;
+    if (Array.isArray(b)) return b;
+    const c = b?.data;
+    if (Array.isArray(c)) return c;
+    return [];
+  };
+  const goals = extractGoals(goalsData);
+  // Merge local goals and server goals uniquely by _id
+  const goalMap = new Map();
+  [...localGoals, ...goals].forEach(g => {
+    if (g && (g._id || g.id)) goalMap.set(g._id || g.id, g);
+  });
+  const mergedGoals = Array.from(goalMap.values());
+  const groups = groupsData?.data?.data?.data || groupsData?.data?.data || [];
+  
+  // Debug logging
+  console.log('GoalsPage Debug:', { 
+    localGoals: localGoals.length, 
+    serverGoals: goals.length, 
+    mergedGoals: mergedGoals.length,
+    goalsData: !!goalsData 
+  });
 
   const handleCreateGoal = (data) => {
     createGoalMutation.mutate(data);
@@ -157,10 +206,11 @@ const GoalsPage = () => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD',
-    }).format(amount);
+      currency: 'INR',
+      maximumFractionDigits: 2,
+    }).format(Number(amount || 0));
   };
 
   const formatDate = (date) => {
@@ -207,7 +257,9 @@ const GoalsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-dark-950 p-6">
+    <div className="min-h-screen bg-dark-950">
+      <Navigation />
+      <div className="p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
@@ -290,7 +342,7 @@ const GoalsPage = () => {
           transition={{ delay: 0.2 }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
         >
-          {goals.length === 0 ? (
+          {mergedGoals.length === 0 ? (
             <div className="col-span-full">
               <Card className="p-12 text-center">
                 <Target className="w-16 h-16 text-dark-400 mx-auto mb-4" />
@@ -302,7 +354,7 @@ const GoalsPage = () => {
               </Card>
             </div>
           ) : (
-            goals.map((goal) => (
+            mergedGoals.map((goal) => (
               <Card key={goal._id} className="p-6 hover:scale-105 transition-transform">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-3">
@@ -316,7 +368,7 @@ const GoalsPage = () => {
                       )}
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-white">{goal.name}</h3>
+                      <h3 className="text-lg font-semibold text-white">{goal.title || goal.name}</h3>
                       <p className="text-dark-400 text-sm capitalize">{goal.type}</p>
                     </div>
                   </div>
@@ -333,7 +385,7 @@ const GoalsPage = () => {
                       size="sm"
                       onClick={() => setShowContributeModal(goal)}
                     >
-                      <DollarSign className="w-4 h-4" />
+                      <IndianRupee className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
@@ -357,7 +409,7 @@ const GoalsPage = () => {
                   </div>
                   <div className="flex justify-between text-sm text-dark-400">
                     <span>{formatCurrency(goal.currentAmount || 0)} / {formatCurrency(goal.targetAmount || 0)}</span>
-                    <span>{calculateDaysRemaining(goal.deadline)} days left</span>
+                    <span>{calculateDaysRemaining(goal.targetDate || goal.deadline)} days left</span>
                   </div>
                 </div>
 
@@ -433,6 +485,7 @@ const GoalsPage = () => {
             ))
           )}
         </motion.div>
+      </div>
       </div>
 
       {/* Create Goal Modal */}

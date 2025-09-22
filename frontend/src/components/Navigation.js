@@ -5,7 +5,7 @@ import {
   Home, 
   Users, 
   Target, 
-  DollarSign, 
+  IndianRupee, 
   BarChart3, 
   Trophy, 
   User, 
@@ -25,7 +25,7 @@ const Navigation = () => {
     { path: '/dashboard', label: 'Dashboard', icon: Home },
     { path: '/groups', label: 'Groups', icon: Users },
     { path: '/goals', label: 'Goals', icon: Target },
-    { path: '/contributions', label: 'Contributions', icon: DollarSign },
+    { path: '/contributions', label: 'Contributions', icon: IndianRupee },
     { path: '/analytics', label: 'Analytics', icon: BarChart3 },
     { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
   ];
@@ -168,4 +168,7 @@ const Navigation = () => {
 };
 
 export default Navigation;
+
+
+
 

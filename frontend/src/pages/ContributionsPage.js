@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { 
-  DollarSign, 
+  IndianRupee, 
   Plus, 
   Search, 
   Filter, 
@@ -27,6 +27,7 @@ import Input from '../components/Input';
 import LoadingSpinner from '../components/LoadingSpinner';
 import AddContributionModal from '../components/AddContributionModal';
 import EditContributionModal from '../components/EditContributionModal';
+import Navigation from '../components/Navigation';
 import { contributionsAPI, groupsAPI } from '../services/api';
 
 const ContributionsPage = () => {
@@ -40,43 +41,38 @@ const ContributionsPage = () => {
   const queryClient = useQueryClient();
 
   // Fetch user's contributions
-  const { data: contributionsData, isLoading: contributionsLoading } = useQuery(
-    ['contributions', searchQuery, groupFilter, typeFilter, statusFilter],
-    () => contributionsAPI.getContributions({ 
+  const { data: contributionsData, isLoading: contributionsLoading } = useQuery({
+    queryKey: ['contributions', searchQuery, groupFilter, typeFilter, statusFilter],
+    queryFn: () => contributionsAPI.getContributions({ 
       q: searchQuery,
       groupId: groupFilter !== 'all' ? groupFilter : undefined,
       type: typeFilter !== 'all' ? typeFilter : undefined,
       status: statusFilter !== 'all' ? statusFilter : undefined
     }),
-    {
-      refetchOnWindowFocus: false,
-    }
-  );
+    refetchOnWindowFocus: false,
+  });
 
   // Fetch user's groups for filtering and adding contributions
-  const { data: groupsData } = useQuery(
-    'user-groups',
-    () => groupsAPI.getGroups(),
-    {
-      refetchOnWindowFocus: false,
-    }
-  );
+  const { data: groupsData } = useQuery({
+    queryKey: ['user-groups'],
+    queryFn: () => groupsAPI.getGroups(),
+    refetchOnWindowFocus: false,
+  });
 
   // Fetch contribution statistics
-  const { data: statsData } = useQuery(
-    'contribution-stats',
-    () => contributionsAPI.getContributionStats(),
-    {
-      refetchOnWindowFocus: false,
-    }
-  );
+  const { data: statsData } = useQuery({
+    queryKey: ['contribution-stats'],
+    queryFn: () => contributionsAPI.getContributionStats(),
+    refetchOnWindowFocus: false,
+  });
 
   // Create contribution mutation
-  const createContributionMutation = useMutation(contributionsAPI.createContribution, {
+  const createContributionMutation = useMutation({
+    mutationFn: contributionsAPI.createContribution,
     onSuccess: () => {
-      queryClient.invalidateQueries('contributions');
-      queryClient.invalidateQueries('contribution-stats');
-      queryClient.invalidateQueries('groups');
+      queryClient.invalidateQueries({ queryKey: ['contributions'] });
+      queryClient.invalidateQueries({ queryKey: ['contribution-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
       setShowAddModal(false);
       toast.success('Contribution added successfully!');
     },
@@ -86,27 +82,26 @@ const ContributionsPage = () => {
   });
 
   // Update contribution mutation
-  const updateContributionMutation = useMutation(
-    ({ id, data }) => contributionsAPI.updateContribution(id, data),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries('contributions');
-        queryClient.invalidateQueries('contribution-stats');
-        setShowEditModal(false);
-        toast.success('Contribution updated successfully!');
-      },
-      onError: (error) => {
-        toast.error(error.response?.data?.message || 'Failed to update contribution');
-      },
-    }
-  );
+  const updateContributionMutation = useMutation({
+    mutationFn: ({ id, data }) => contributionsAPI.updateContribution(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contributions'] });
+      queryClient.invalidateQueries({ queryKey: ['contribution-stats'] });
+      setShowEditModal(false);
+      toast.success('Contribution updated successfully!');
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to update contribution');
+    },
+  });
 
   // Delete contribution mutation
-  const deleteContributionMutation = useMutation(contributionsAPI.deleteContribution, {
+  const deleteContributionMutation = useMutation({
+    mutationFn: contributionsAPI.deleteContribution,
     onSuccess: () => {
-      queryClient.invalidateQueries('contributions');
-      queryClient.invalidateQueries('contribution-stats');
-      queryClient.invalidateQueries('groups');
+      queryClient.invalidateQueries({ queryKey: ['contributions'] });
+      queryClient.invalidateQueries({ queryKey: ['contribution-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
       toast.success('Contribution cancelled successfully!');
     },
     onError: (error) => {
@@ -114,8 +109,8 @@ const ContributionsPage = () => {
     },
   });
 
-  const contributions = contributionsData?.data?.data || [];
-  const groups = groupsData?.data?.data || [];
+  const contributions = contributionsData?.data?.data?.data || [];
+  const groups = groupsData?.data?.data?.data || groupsData?.data?.data || [];
   const stats = statsData?.data || {};
 
   const handleCreateContribution = (data) => {
@@ -133,10 +128,11 @@ const ContributionsPage = () => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD',
-    }).format(amount);
+      currency: 'INR',
+      maximumFractionDigits: 2,
+    }).format(Number(amount || 0));
   };
 
   const formatDate = (date) => {
@@ -201,7 +197,9 @@ const ContributionsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-dark-950 p-6">
+    <div className="min-h-screen bg-dark-950">
+      <Navigation />
+      <div className="p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
@@ -334,7 +332,7 @@ const ContributionsPage = () => {
         >
           {contributions.length === 0 ? (
             <Card className="p-12 text-center">
-              <DollarSign className="w-16 h-16 text-dark-400 mx-auto mb-4" />
+              <IndianRupee className="w-16 h-16 text-dark-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-white mb-2">No contributions yet</h3>
               <p className="text-dark-400 mb-6">Start contributing to your groups to track your savings progress!</p>
               <Button variant="primary" onClick={() => setShowAddModal(true)}>
@@ -347,7 +345,7 @@ const ContributionsPage = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <div className="w-12 h-12 bg-gradient-success rounded-xl flex items-center justify-center">
-                      <DollarSign className="w-6 h-6 text-white" />
+                      <IndianRupee className="w-6 h-6 text-white" />
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
@@ -426,6 +424,7 @@ const ContributionsPage = () => {
             ))
           )}
         </motion.div>
+      </div>
       </div>
 
       {/* Add Contribution Modal */}

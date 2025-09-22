@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
-import { X, Target, DollarSign, Calendar, Users, FileText, Star } from 'lucide-react';
+import { X, Target, IndianRupee, Calendar, Users } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
 import Input from './Input';
@@ -13,7 +13,19 @@ const CreateGoalModal = ({ onClose, onSubmit, groups = [], isLoading }) => {
   const isGroupGoal = goalType === 'group';
 
   const handleFormSubmit = (data) => {
-    onSubmit(data);
+    const payload = {
+      title: data.name,
+      description: data.description || '',
+      targetAmount: typeof data.targetAmount === 'string' ? parseFloat(data.targetAmount) : data.targetAmount,
+      targetDate: data.deadline,
+      currency: 'INR',
+      type: data.type === 'group' ? 'group' : 'personal',
+      category: 'savings',
+      priority: 'medium',
+      isPublic: !!data.isPublic,
+      group: data.type === 'group' ? data.group || null : null,
+    };
+    onSubmit(payload);
   };
 
   return (
@@ -81,13 +93,6 @@ const CreateGoalModal = ({ onClose, onSubmit, groups = [], isLoading }) => {
               >
                 <option value="personal">Personal</option>
                 <option value="group">Group</option>
-                <option value="emergency">Emergency Fund</option>
-                <option value="vacation">Vacation</option>
-                <option value="education">Education</option>
-                <option value="home">Home Purchase</option>
-                <option value="vehicle">Vehicle</option>
-                <option value="retirement">Retirement</option>
-                <option value="other">Other</option>
               </select>
               {errors.type && (
                 <p className="text-red-400 text-sm mt-1">{errors.type.message}</p>
@@ -106,7 +111,7 @@ const CreateGoalModal = ({ onClose, onSubmit, groups = [], isLoading }) => {
                   className="w-full px-4 py-3 bg-dark-800 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 >
                   <option value="">Choose a group...</option>
-                  {groups.map((group) => (
+                  {Array.isArray(groups) && groups.map((group) => (
                     <option key={group._id} value={group._id}>
                       {group.name}
                     </option>
@@ -125,12 +130,12 @@ const CreateGoalModal = ({ onClose, onSubmit, groups = [], isLoading }) => {
               <Input
                 {...register('targetAmount', { 
                   required: 'Target amount is required',
-                  min: { value: 1, message: 'Amount must be at least $1' }
+                  min: { value: 1, message: 'Amount must be at least ₹1' }
                 })}
                 type="number"
                 step="0.01"
                 placeholder="0.00"
-                leftIcon={<DollarSign className="w-5 h-5" />}
+                leftIcon={<IndianRupee className="w-5 h-5" />}
                 error={errors.targetAmount?.message}
               />
             </div>
@@ -155,37 +160,6 @@ const CreateGoalModal = ({ onClose, onSubmit, groups = [], isLoading }) => {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">
-                Priority
-              </label>
-              <select
-                {...register('priority')}
-                className="w-full px-4 py-3 bg-dark-800 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">
-                Category
-              </label>
-              <select
-                {...register('category')}
-                className="w-full px-4 py-3 bg-dark-800 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              >
-                <option value="savings">Savings</option>
-                <option value="investment">Investment</option>
-                <option value="debt">Debt Payment</option>
-                <option value="purchase">Purchase</option>
-                <option value="emergency">Emergency</option>
-                <option value="lifestyle">Lifestyle</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
 
             <div className="flex items-center space-x-3">
               <input

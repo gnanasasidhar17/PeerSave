@@ -3,10 +3,13 @@ import { motion } from 'framer-motion';
 import { User, Settings, Bell, Shield, LogOut } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
+import Navigation from '../components/Navigation';
 
 const ProfilePage = () => {
   return (
-    <div className="min-h-screen bg-dark-950 p-6">
+    <div className="min-h-screen bg-dark-950">
+      <Navigation />
+      <div className="p-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <motion.div
@@ -104,6 +107,7 @@ const ProfilePage = () => {
             </Button>
           </Card>
         </motion.div>
+      </div>
       </div>
     </div>
   );

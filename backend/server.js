@@ -15,7 +15,29 @@ connectDB();
 
 // Security middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow localhost with any port for development
+    if (origin.match(/^http:\/\/localhost:\d+$/)) {
+      return callback(null, true);
+    }
+    
+    // Allow the frontend URL from environment
+    const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:3000';
+    if (origin === allowedOrigin) {
+      return callback(null, true);
+    }
+    
+    // Allow file:// protocol for local HTML files (development only)
+    if (process.env.NODE_ENV === 'development' && origin === 'null') {
+      return callback(null, true);
+    }
+    
+    console.log('❌ CORS blocked origin:', origin);
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
